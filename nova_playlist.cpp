@@ -35,9 +35,7 @@ void NovaPlaylist::on_btGravar_clicked()
         ui->leNamePlaylist->setFocus();
     }
 
-    //CREATE TABLE playlist (id integer primary key autoincrement, dt datetime, ativo integer, name text)
 }
-
 
 bool NovaPlaylist::inserirPlaylist(model::Playlist *value)
 {

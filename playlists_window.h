@@ -9,12 +9,20 @@
 #include <QTableWidgetItem>
 #include <QTreeWidgetItem>
 #include <QMessageBox>
+#include <QSqlQuery>
+#include <QSqlError>
+#include "db_manager.h"
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class PlaylistsWindow; }
 
 namespace model {
 class Playlist;
+}
+
+namespace db{
+  class Manager;
 }
 
 QT_END_NAMESPACE
@@ -67,6 +75,7 @@ public:
 public slots:
     void addMusic();
 
+    void addPlaylist(QVariant response);
     void onAddMusic();
 
     void savePlaylist(QVariantMap playlist);
@@ -79,15 +88,13 @@ public slots:
     void addMusics(QVariant response);
     void mountTableMusics(QVariantList tracks);
 
-    void mountTreeViewPlaylists(QVariantList playlists);
+    void mountTableViewPlaylists(QVariantList playlists);
 
     void getPlayList();
 private slots:
     void on_pushButton_clicked();
 
 private:
-    void addItemLast();
-
     void searchResultsBy(const QString &term);
 
     void searchPlaylists();
@@ -102,8 +109,18 @@ private:
 
     ItemTrack getItem(QVariant dados);
 
+
+    template <class T> inline T* getObject(QTableWidgetItem* item)
+    {
+        QVariant value = item->data(QTableWidgetItem::UserType);
+        if (!value.isNull())
+            return qobject_cast<T*>(qvariant_cast<QObject*>(value));
+        return NULL;
+    }
+
 private:
     Ui::PlaylistsWindow *ui;
+    QSqlDatabase newDb;
 
     QVariantList _tracks;
     QString _lasterm ="";

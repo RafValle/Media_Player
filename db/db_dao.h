@@ -146,6 +146,42 @@ namespace db {
         }
 
         template <class T>
+        inline bool selectFrom(QObject* object){
+
+            QString select = "SELECT ";
+
+            int propertyOffSet = T::staticMetaObject.propertyOffset();
+            int propertyCount = T::staticMetaObject.propertyCount();
+
+            QStringList properties;
+            for(int i = propertyOffSet; i < propertyCount; i++) {
+                QByteArray propertyName = T::staticMetaObject.property(i).name();
+                properties << QString(propertyName);
+            }
+
+            select += properties.join(", ") + " FROM ";
+            select += T::tableName() + " ";
+
+            if(newDb.transaction()) {
+                QSqlQuery query(this->newDb);
+                query.prepare(select);
+
+                for(auto&propertyName: properties)
+                     query.bindValue(":" + propertyName, object->property(propertyName.toUtf8()));
+
+                bool executed = query.exec();
+                if(executed) {
+                    newDb.commit();
+                    return true;
+                } else {
+                    newDb.rollback();
+                    qDebug() << query.lastError() << query.lastError().text();
+                }
+            }
+            return false;
+        }
+
+        template <class T>
         inline T* selectFromId(QVariant id){
             T* t = NULL;
 

@@ -184,18 +184,6 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="0" rowspan="3">
-        <widget class="QTreeWidget" name="twPlaylists">
-         <property name="styleSheet">
-          <string notr="true">background-color: rgb(191, 191, 191);</string>
-         </property>
-         <column>
-          <property name="text">
-           <string notr="true">1</string>
-          </property>
-         </column>
-        </widget>
-       </item>
        <item row="2" column="3" rowspan="2">
         <widget class="QTableWidget" name="tbSearch">
          <property name="styleSheet">
@@ -244,6 +232,13 @@
           </size>
          </property>
         </spacer>
+       </item>
+       <item row="1" column="0" rowspan="3">
+        <widget class="QTableWidget" name="tbPlaylists">
+         <property name="styleSheet">
+          <string notr="true">background-color: rgb(191, 191, 191);</string>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>

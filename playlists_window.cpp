@@ -4,11 +4,12 @@
 #include "model_playlist.h"
 #include "nova_playlist.h"
 #include "db_dao.h"
-
+#include "db_manager.h"
+#include "db_connection.h"
 
 #include "lib_requests.h"
 #include "lib_manager.h"
-
+#include <QSqlQuery>
 #include <QDebug>
 
 PlaylistsWindow::PlaylistsWindow(QWidget *parent)
@@ -19,10 +20,10 @@ PlaylistsWindow::PlaylistsWindow(QWidget *parent)
     this->setWindowTitle("Playlists");
     this->resetSearch("");
 
-    ui->twPlaylists->clear();
-    ui->twPlaylists->setColumnCount(1);
+//    ui->tbPlaylists->clear();
+//    ui->tbPlaylists->setColumnCount(1);
 
-    this->addItemLast();
+    this->getPlayList();
 
     ui->leSearch->setFocus();
 
@@ -48,33 +49,22 @@ void PlaylistsWindow::addMusic()
 void PlaylistsWindow::onAddMusic()
 {
     QList<QTableWidgetItem*> tracks = ui->tbSearch->selectedItems();
+
     if (tracks.isEmpty())
         return;
+     QList<model::PlaylistMusic*> listMusic;
 
-    QTreeWidgetItem* playlist = ui->twPlaylists->currentItem();
-    if (playlist == nullptr)
-        return;
+    foreach(QTableWidgetItem* item, tracks){
+        model::PlaylistMusic* music = this->getObject<model::PlaylistMusic>(item);
+            music->setPlaylists_id(ui->tbPlaylists->currentItem()->text().toLongLong());
+            listMusic << music;
 
+    }
 
-//    MVCGenericDAO<gm_fs_gestor::BloqueioRca> dao(this);
-//        if(!dao.upsert(value)){
-//            value->deleteLater();
-//            return this->setLastErrorNull<BloqueioRca>();
-//        }
+//    QTreeWidgetItem* playlist = ui->twPlaylists->currentItem();
+//    if (playlist == nullptr)
+//        return;
 
-//    {"isRegistered", false }
-
-}
-
-
-void PlaylistsWindow::addItemLast()
-{
-    QTreeWidgetItem* item =new QTreeWidgetItem();
-    QLineEdit *lineEdit = new QLineEdit(dynamic_cast<QWidget*>(item));
-    lineEdit->setText("New Playlist");
-    item->setText(0, "New Playlist");
-    item->setData(1, Qt::UserRole, QVariantMap{{"isRegistered", false }} );
-    ui->twPlaylists->addTopLevelItem(item);
 }
 
 void PlaylistsWindow::savePlaylist(QVariantMap playlist)
@@ -100,6 +90,19 @@ void PlaylistsWindow::onTableItemClicked(QTableWidgetItem *item)
 {
    Q_UNUSED(item)
    return;
+}
+
+void PlaylistsWindow::addPlaylist(QVariant response)
+{
+
+    _tracks.insert(_tracks.size(), response);
+    QVariantMap listMap = response.toMap().value(QByteArrayLiteral("tracks")).toMap();
+    if (listMap.isEmpty())
+        return;
+    auto items = listMap.value(QByteArrayLiteral("items")).toList();
+    auto totalItems = listMap.value(QByteArrayLiteral("total")).toInt();
+    this->_total=totalItems;
+    this->mountTableMusics(items);
 }
 
 void PlaylistsWindow::addMusics(QVariant response)
@@ -144,65 +147,34 @@ void PlaylistsWindow::mountTableMusics(QVariantList tracks)
     connect(ui->tbSearch->verticalScrollBar(), &QScrollBar::valueChanged , this, &PlaylistsWindow::onPesquisaDoNext);
 }
 
-void PlaylistsWindow::mountTreeViewPlaylists(QVariantList playlists)
+void PlaylistsWindow::mountTableViewPlaylists(QVariantList playlists)
 {
     Q_UNUSED(playlists)
-    ui->twPlaylists->clear();
-//    QTreeWidgetItem* item;
-//    ItemTrack itemTrack;
-//    itemTrack.readMap(playlist.toMap());
-//    for(auto&playlist: playlists) {
-//        item = new QTreeWidgetItem();
-//        QLineEdit *lineEdit = new QLineEdit(dynamic_cast<QWidget*>(item));
-//        lineEdit->setText(itemTrack);
+//    ui->twPlaylists->clear();
 
-////        item->setExpanded(
-////        item->set
+    disconnect(ui->tbSearch, &QTableWidget::itemClicked , this, &PlaylistsWindow::onTableItemClicked);
+    disconnect(ui->tbSearch->verticalScrollBar(), &QScrollBar::valueChanged , this, &PlaylistsWindow::onPesquisaDoNext);
 
-//    }
-//        ui->twPlaylists->addTopLevelItem(item);
-//        itemutil::setObject(itemDocumento, COLUNA_DESCRICAO, documento);
-//    ui->twPlaylists->addTopLevelItem(item);
-//     insertChildren(int index, const QList<QTreeWidgetItem *> &children)
+    QStringList item_counts({"Playlist"});
+    ui->tbSearch->setColumnCount(item_counts.count());
+    ui->tbSearch->setHorizontalHeaderLabels(item_counts);
 
-//    playlists.isEmpty();
-//        itemDocumento->setText(COLUNA_DESCRICAO, documento->descricao());
-//        itemDocumento->setTextAlignment(COLUNA_DESCRICAO, Qt::AlignRight);
+    QTableWidgetItem* wgItem = nullptr;
+    int i=ui->tbSearch->rowCount();
+    for (auto&item:playlists){
+        ItemTrack play= this->getItem(item);
+        ui->tbSearch->insertRow(i);
+        wgItem = new QTableWidgetItem(play.name);
+        wgItem->setData(3,play.getMap());
+        i++;
+    }
+    ui->tbSearch->resizeRowsToContents();
+    ui->tbSearch->resizeColumnsToContents();
 
-//        itemDocumento->setText(COLUNA_TIPO, documento->tipoDocumento()->toString());
-//        itemDocumento->setTextAlignment(COLUNA_TIPO, Qt::AlignCenter);
-//        itemDocumento->setText(COLUNA_DATA_INCLUSAO, documento->dataInclusao().toString("dd/MM/yyyy hh:mm:ss"));
-//        itemDocumento->setTextAlignment(COLUNA_DATA_INCLUSAO, Qt::AlignCenter);
-//    ui->twDocumentos->ajustarTamanhoColunasAConteudo();
+    connect(ui->tbSearch, &QTableWidget::itemClicked , this, &PlaylistsWindow::onTableItemClicked);
+    connect(ui->tbSearch->verticalScrollBar(), &QScrollBar::valueChanged , this, &PlaylistsWindow::onPesquisaDoNext);
 }
 
-//    disconnect(ui->tbSearch, &QTableWidget::itemClicked , this, &PlaylistsWindow::onTableItemClicked);
-//    disconnect(ui->tbSearch->verticalScrollBar(), &QScrollBar::valueChanged , this, &PlaylistsWindow::onPesquisaDoNext);
-
-//    QStringList item_counts({"Name", "Música", "Duration"});
-//    ui->tbSearch->setColumnCount(item_counts.count());
-//    ui->tbSearch->setHorizontalHeaderLabels(item_counts);
-
-//    QTableWidgetItem* wgItem = nullptr;
-//    int i=ui->tbSearch->rowCount();
-//    for (auto&item:tracks){
-//        ItemTrack track= this->getItem(item);
-//        ui->tbSearch->insertRow(i);
-//        wgItem = new QTableWidgetItem(track.name);
-//        ui->tbSearch->setItem(i, 0, wgItem);
-//        wgItem = new QTableWidgetItem(track.artists);
-//        ui->tbSearch->setItem(i, 1, wgItem);
-//        wgItem = new QTableWidgetItem(track.duration);
-//        ui->tbSearch->setItem(i, 2, wgItem);
-//        i++;
-//    }
-//    ui->tbSearch->resizeColumnsToContents();
-//    ui->tbSearch->resizeColumnsToContents();
-//    connect(ui->tbSearch, &QTableWidget::itemClicked , this, &PlaylistsWindow::onTableItemClicked);
-//    connect(ui->tbSearch->verticalScrollBar(), &QScrollBar::valueChanged , this, &PlaylistsWindow::onPesquisaDoNext);
-//wgItem->setData(0,track.getMap());
-//QMessageBox::warning(NULL, "Aviso", msgCancelamento.arg(QString::number(registroAtual), QString::number(qtdRegistros)));
-//WidgetUtil::mensagemAlerta("Não foi encontrado nenhum Comprovante para essa solicitação!");
 
 void PlaylistsWindow::searchResultsBy(const QString &term)
 {
@@ -310,7 +282,30 @@ void PlaylistsWindow::on_pushButton_clicked()
 
 void PlaylistsWindow::getPlayList()
 {
-    db::Dao dao(this);
+    QString select = "select * from playlist";
+
+    QSqlQuery query(db::Connection::db());
+    query.prepare(select);
+    bool ok = query.exec();
+    if(ok){
+        int count = 0;
+        ui->tbPlaylists->setColumnCount(2);
+        while (query.next()) {
+            ui->tbPlaylists->insertRow(count);
+            ui->tbPlaylists->setItem(count,0, new QTableWidgetItem(query.value(3).toString()));
+            ui->tbPlaylists->setItem(count,1, new QTableWidgetItem(query.value(1).toString()));
+            ui->tbPlaylists->setRowHeight(count,40);
+            count++;
+        }
+
+        ui->tbPlaylists->setColumnWidth(0,300);
+        ui->tbPlaylists->setColumnWidth(1,150);
+
+    }else{
+        QMessageBox::warning(this,"ERRO","Erro ao pesquisar playlists");
+
+    }
+
 
 }
 
